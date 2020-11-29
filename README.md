@@ -1,6 +1,9 @@
 # arduino-dali
 A timer-based DALI library for Arduino
 
+This library allows you to create a DALI controller/gateway with an Arduino device. It supports sending commands, receiving responses and commissioning devices. It requires the TimerOne library for transmission and the PinChangeInterrupt library for reception. These libraries need to be installed with the Library Manager in the Arduino IDE.
+
+
 Library Documentation: https://hubsif.github.io/arduino-dali/
 
 Short example usage:
