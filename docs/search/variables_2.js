@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['noofballasts',['noOfBallasts',['../class_dali_class.html#a76024ca4ef39d541a70a7ef2bf82b3c0',1,'DaliClass']]]
+  ['nextshortaddress_0',['nextShortAddress',['../class_dali_class.html#a340ae714905347dffe131a8e8b8851f8',1,'DaliClass']]]
 ];

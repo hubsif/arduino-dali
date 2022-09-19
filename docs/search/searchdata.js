@@ -6,7 +6,8 @@ var indexSectionsWithContent =
   3: "bcps",
   4: "cdn",
   5: "d",
-  6: "cd"
+  6: "cd",
+  7: "d"
 };
 
 var indexSectionNames =
@@ -17,7 +18,8 @@ var indexSectionNames =
   3: "functions",
   4: "variables",
   5: "typedefs",
-  6: "enums"
+  6: "enums",
+  7: "pages"
 };
 
 var indexSectionLabels =
@@ -28,6 +30,7 @@ var indexSectionLabels =
   3: "Functions",
   4: "Variables",
   5: "Typedefs",
-  6: "Enumerations"
+  6: "Enumerations",
+  7: "Pages"
 };
 

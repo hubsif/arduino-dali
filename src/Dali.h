@@ -27,7 +27,8 @@
  * @include dali_blink.ino
  *
  * @par Changelog
- * - (2019-05-14) Initial release
+ * - v0.0.3 (2022-09-19) Make commissioning state public
+ * - v0.0.2 (2019-05-14) Initial release
  *
  * @author hubsif <hubsif@gmx.de>
  * @example dali_blink.ino
@@ -199,7 +200,8 @@ class DaliClass {
       * needs to be called repeatedly until commissioning has finished. By default commissioning is done for
       * all ballasts on the bus (@p onlyNew = false). With this, at first current short addresses from
       * all ballasts are removed. Then all found ballasts are assigned a new short address, starting
-      * from @p startAddress. The number of ballasts found can be determined from #nextShortAddress.
+      * from @p startAddress. Commissioning has finished when @p commissionState is set back to COMMISSION_OFF.
+      * The number of ballasts found can be determined from #nextShortAddress.
       * With @p onlyNew = true ballasts with a short address assigned are ignored. The caller is responsible
       * for setting an appropriate value to @p startAddress. */
     void commission(byte startAddress = 0, bool onlyNew = false);
@@ -213,7 +215,6 @@ class DaliClass {
     /** When true, only ballasts without short address set are commissioned. */
     bool commissionOnlyNew;
 
-  protected:
     /** commissioning state machine states */
     enum commissionStateEnum { 
       COMMISSION_OFF, COMMISSION_INIT, COMMISSION_INIT2, COMMISSION_WRITE_DTR, COMMISSION_REMOVE_SHORT, COMMISSION_REMOVE_SHORT2, COMMISSION_RANDOM, COMMISSION_RANDOM2, COMMISSION_RANDOMWAIT,
@@ -224,6 +225,7 @@ class DaliClass {
     };
     commissionStateEnum commissionState = COMMISSION_OFF; /**< current state of commissioning state machine */
 
+  protected:
     /** Prepares a byte array for sending DALI commands */
     byte * prepareCmd(byte * message, byte address, byte command, byte type, byte selector);
     
