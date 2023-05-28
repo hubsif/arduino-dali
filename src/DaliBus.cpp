@@ -17,11 +17,13 @@
 
 #include "DaliBus.h"
 
+#ifndef ARDUINO_ARCH_RP2040
   // wrapper for interrupt handler
 void DaliBus_wrapper_pinchangeISR() { DaliBus.pinchangeISR(); }
 void DaliBus_wrapper_timerISR() { DaliBus.timerISR(); }
+#endif
 
-void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low = true) {
+void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
   txPin = tx_pin;
   rxPin = rx_pin;
   activeLow = active_low;
@@ -35,11 +37,24 @@ void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low = true) {
 
   // RX pin setup
   pinMode(rxPin, INPUT);
+
+#ifdef ARDUINO_ARCH_RP2040
+  attachInterrupt(digitalPinToInterrupt(rxPin), []() -> void {
+    DaliBus.pinchangeISR();
+  }, CHANGE);
+
+  ITimer2 = new RPI_PICO_Timer(DALI_TIMER);
+  ITimer2->attachInterrupt(DALI_TE * 1000, [](repeating_timer *t) -> bool {
+    DaliBus.timerISR();
+    return true;
+  });
+#else
   attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(rxPin), DaliBus_wrapper_pinchangeISR, CHANGE);
 
   // Timer setup
   Timer1.initialize(DALI_TE); // set timer to time of one half-bit
   Timer1.attachInterrupt(DaliBus_wrapper_timerISR);
+#endif
 }
 
 daliReturnValue DaliBusClass::sendRaw(const byte * message, byte length) {

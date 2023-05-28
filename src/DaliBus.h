@@ -27,10 +27,22 @@
 
 #include "Arduino.h"
 
+#ifdef ARDUINO_ARCH_RP2040
+#include "TimerInterrupt_Generic.h"
+#ifndef DALI_TIMER
+#define DALI_TIMER 2
+#warning DALI_TIMER not set; using 2 as default (valid values: 0-3)
+#else
+#if DALI_TIMER < 0 || DALI_TIMER > 3
+#error DALI_TIMER has invalid value (valid values: 0-3)
+#endif
+#endif
+#else
 // TimerOne library for tx timer
 #include "TimerOne.h"
 // PinChangeInterrupt library for rx interrupt
 #include "PinChangeInterrupt.h"
+#endif
 
 const int DALI_BAUD = 1200;
 const unsigned long DALI_TE = 417;
@@ -68,6 +80,9 @@ class DaliBusClass {
     bool activeLow;
     byte txMessage[3];
     byte txLength;
+#ifdef ARDUINO_ARCH_RP2040
+    RPI_PICO_Timer *ITimer2;
+#endif
 
     enum busStateEnum {
       TX_START_1ST, TX_START_2ND,

@@ -33,11 +33,11 @@
   repeat: 32-128(-143), 258, 259, 
 */
 
-void DaliClass::begin(byte tx_pin, byte rx_pin, bool active_low = true) {
+void DaliClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
   DaliBus.begin(tx_pin, rx_pin, active_low);
 }
 
-int DaliClass::sendRawWait(const byte * message, byte length, byte timeout = 50) {
+int DaliClass::sendRawWait(const byte * message, byte length, byte timeout) {
   unsigned long time = millis();
   int result;
 
@@ -61,22 +61,22 @@ byte * DaliClass::prepareCmd(byte * message, byte address, byte command, byte ty
   return message;  
 }
 
-daliReturnValue DaliClass::sendArc(byte address, byte value, byte addr_type = DALI_SHORT_ADDRESS) {
+daliReturnValue DaliClass::sendArc(byte address, byte value, byte addr_type) {
   byte message[2];
   return DaliBus.sendRaw(prepareCmd(message, address, value, addr_type, 0), 2);
 }
 
-daliReturnValue DaliClass::sendArcWait(byte address, byte value, byte addr_type = DALI_SHORT_ADDRESS, byte timeout = 50) {
+daliReturnValue DaliClass::sendArcWait(byte address, byte value, byte addr_type, byte timeout) {
   byte message[2];
-  return sendRawWait(prepareCmd(message, address, value, addr_type, 0), 2, timeout);
+  return (daliReturnValue)sendRawWait(prepareCmd(message, address, value, addr_type, 0), 2, timeout);
 }
 
-daliReturnValue DaliClass::sendCmd(byte address, byte command, byte addr_type = DALI_SHORT_ADDRESS) {
+daliReturnValue DaliClass::sendCmd(byte address, byte command, byte addr_type) {
   byte message[2];
   return DaliBus.sendRaw(prepareCmd(message, address, command, addr_type, 1), 2);
 }
 
-int DaliClass::sendCmdWait(byte address, byte command, byte addr_type = DALI_SHORT_ADDRESS, byte timeout = 50) {
+int DaliClass::sendCmdWait(byte address, byte command, byte addr_type, byte timeout) {
   byte sendCount = (command > 32 && command < 143) ? 2 : 1; // config commands need to be sent twice
 
   byte message[2];
@@ -99,18 +99,18 @@ byte * DaliClass::prepareSpecialCmd(byte * message, word command, byte value) {
   return message;
 }
 
-daliReturnValue DaliClass::sendSpecialCmd(word command, byte value = 0) {
-  if (command < 256 || command > 287) return 1;
+daliReturnValue DaliClass::sendSpecialCmd(word command, byte value) {
+  if (command < 256 || command > 287) return DALI_INVALID_PARAMETER;
   byte message[2];
   return DaliBus.sendRaw(prepareSpecialCmd(message, command, value), 2);
 }
 
-int DaliClass::sendSpecialCmdWait(word command, byte value = 0, byte timeout = 50) {
+int DaliClass::sendSpecialCmdWait(word command, byte value, byte timeout) {
   byte message[2];
   return sendRawWait(prepareSpecialCmd(message, command, value), 2);
 }
 
-void DaliClass::commission(byte startAddress = 0, bool onlyNew = false) {
+void DaliClass::commission(byte startAddress, bool onlyNew) {
   nextShortAddress = startAddress;
   commissionOnlyNew = onlyNew;
   
@@ -229,5 +229,3 @@ void DaliClass::commission_tick() {
     }
   }
 }
-
-DaliClass Dali;
