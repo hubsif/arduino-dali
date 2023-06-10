@@ -234,6 +234,8 @@ class DaliClass {
 };
 
 /** Dali class instance for main usage (seems to be common Arduino Library style) */
+#ifndef DALI_DONT_EXPORT
 extern DaliClass Dali;
+#endif
 
 #endif // DALI_H

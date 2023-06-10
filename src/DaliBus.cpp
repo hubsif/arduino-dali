@@ -21,6 +21,8 @@
   // wrapper for interrupt handler
 void DaliBus_wrapper_pinchangeISR() { DaliBus.pinchangeISR(); }
 void DaliBus_wrapper_timerISR() { DaliBus.timerISR(); }
+#else
+RPI_PICO_Timer timer2(0);
 #endif
 
 void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
@@ -43,8 +45,8 @@ void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
     DaliBus.pinchangeISR();
   }, CHANGE);
 
-  ITimer2 = new RPI_PICO_Timer(DALI_TIMER);
-  ITimer2->attachInterrupt(DALI_TE * 1000, [](repeating_timer *t) -> bool {
+  float frequenz = 1 / DALI_TE;
+  timer2.attachInterrupt(2398, [](repeating_timer *t) -> bool {
     DaliBus.timerISR();
     return true;
   });

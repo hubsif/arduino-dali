@@ -80,9 +80,6 @@ class DaliBusClass {
     bool activeLow;
     byte txMessage[3];
     byte txLength;
-#ifdef ARDUINO_ARCH_RP2040
-    RPI_PICO_Timer *ITimer2;
-#endif
 
     enum busStateEnum {
       TX_START_1ST, TX_START_2ND,
