@@ -125,6 +125,7 @@ class DaliClass {
       * It doesn't check if the bus is ready and returns immediately, stating if transmission could be
       * initiated through its response value ::daliReturnValue. */
     daliReturnValue sendArc(byte address, byte value, byte addr_type = DALI_SHORT_ADDRESS);
+    daliReturnValue sendArcBroadcast(byte value);
 
     /** Send a direct arc level command and wait for its completion
       * @param  address    destination address
@@ -135,6 +136,7 @@ class DaliClass {
       * This methods sends a "direct arc power control command" to the bus
       * It uses sendRawWait(), so it waits for the bus to become idle before and after transmission. */
     daliReturnValue sendArcWait(byte address, byte value, byte addr_type = DALI_SHORT_ADDRESS, byte timeout = 50);
+    daliReturnValue sendArcBroadcastWait(byte value, byte timeout = 50);
 
     /** Send a DALI command
       * @param  address    destination address
@@ -147,7 +149,8 @@ class DaliClass {
       * Note that some of the special commands need to be sent twice (258 - INITIALISE, 259 - RANDOMISE), which
       * this method doesn't do by itself. */
     daliReturnValue sendCmd(byte address, byte command, byte addr_type = DALI_SHORT_ADDRESS);
-    
+    daliReturnValue sendCmdBroadcast(byte command);
+
     /** Send a DALI command, wait for its completion and return the response if available
       * @param  address    destination address
       * @param  command    DALI command
@@ -155,7 +158,8 @@ class DaliClass {
       * @param  timeout    time in ms to wait for action to complete
       * @return returns either the response, DALI_RX_EMPTY or any of ::daliReturnValue on error  */
     int sendCmdWait(byte address, byte command, byte addr_type = DALI_SHORT_ADDRESS, byte timeout = 50);
-    
+    int sendCmdBroadcastWait(byte command, byte timeout = 50);
+
     /** Send a DALI special command
       * @param  command  DALI special command
       * @param  value    Value (2nd byte)
@@ -192,6 +196,10 @@ class DaliClass {
       * DALI_RX_EMPTY if no response has been received or any of ::daliReturnValue if an error has occurred. */
     int sendRawWait(const byte * message, byte length, byte timeout = 50);
 
+    /** Set Callback for receiving messages. */
+    void setCallback(EventHandlerReceivedDataFuncPtr callback);
+
+#ifndef DALI_NO_COMMISSIONING
     /** Initiate commissioning of all DALI ballasts
       * @param startAddress  address starting short address assignment from
       * @param onlyNew       commission only ballasts without short address
@@ -224,6 +232,7 @@ class DaliClass {
       COMMISSION_WITHDRAW, COMMISSION_TERMINATE
     };
     commissionStateEnum commissionState = COMMISSION_OFF; /**< current state of commissioning state machine */
+#endif
 
   protected:
     /** Prepares a byte array for sending DALI commands */

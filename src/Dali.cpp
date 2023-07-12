@@ -37,6 +37,11 @@ void DaliClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
   DaliBus.begin(tx_pin, rx_pin, active_low);
 }
 
+void DaliClass::setCallback(EventHandlerReceivedDataFuncPtr callback)
+{
+  DaliBus.receivedCallback = callback;
+}
+
 int DaliClass::sendRawWait(const byte * message, byte length, byte timeout) {
   unsigned long time = millis();
   int result;
@@ -61,9 +66,17 @@ byte * DaliClass::prepareCmd(byte * message, byte address, byte command, byte ty
   return message;  
 }
 
+daliReturnValue DaliClass::sendArcBroadcast(byte value) {
+  return sendArc(0xFF, value, 1);
+}
+
 daliReturnValue DaliClass::sendArc(byte address, byte value, byte addr_type) {
   byte message[2];
   return DaliBus.sendRaw(prepareCmd(message, address, value, addr_type, 0), 2);
+}
+
+daliReturnValue DaliClass::sendArcBroadcastWait(byte value, byte timeout) {
+  return sendArcWait(0xFF, value, 1, timeout);
 }
 
 daliReturnValue DaliClass::sendArcWait(byte address, byte value, byte addr_type, byte timeout) {
@@ -71,9 +84,17 @@ daliReturnValue DaliClass::sendArcWait(byte address, byte value, byte addr_type,
   return (daliReturnValue)sendRawWait(prepareCmd(message, address, value, addr_type, 0), 2, timeout);
 }
 
+daliReturnValue DaliClass::sendCmdBroadcast(byte command) {
+  return sendCmd(0xFF, command, 1);
+}
+
 daliReturnValue DaliClass::sendCmd(byte address, byte command, byte addr_type) {
   byte message[2];
   return DaliBus.sendRaw(prepareCmd(message, address, command, addr_type, 1), 2);
+}
+
+int DaliClass::sendCmdBroadcastWait(byte command, byte timeout) {
+  return sendCmdWait(0xFF, command, 1, timeout);
 }
 
 int DaliClass::sendCmdWait(byte address, byte command, byte addr_type, byte timeout) {
@@ -229,3 +250,7 @@ void DaliClass::commission_tick() {
     }
   }
 }
+
+#ifndef DALI_DONT_EXPORT
+DaliClass Dali;
+#endif

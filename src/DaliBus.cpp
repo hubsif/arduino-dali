@@ -160,7 +160,26 @@ void DaliBusClass::timerISR() {
     case RX_START:
     case RX_BIT:
       if (busIdleCount > 3) // bus has been inactive for too long
+      {
         busState = IDLE;    // rx has been interrupted, bus is idle
+        if(rxLength > 16)
+        {
+          if(receivedCallback != 0)
+          {
+            uint8_t len = (rxLength - (rxLength % 2)) / (2*8);
+            if(len > 1)
+            {
+              uint8_t *data = new uint8_t[len];
+              for(int i = 0; i < len; i++)
+                data[i] = (rxCommand >> ((len-1-i)*8)) & 0xFF;
+              receivedCallback(data, len);
+              delete[] data;
+            } else {
+              receivedCallback((uint8_t*)&rxCommand, 1);
+            }
+          }
+        }
+      }
       break;
   }
 }
@@ -188,6 +207,7 @@ void DaliBusClass::pinchangeISR() {
       if (busLevel == LOW) { // start of rx frame
         //Timer1.restart();    // sync timer
         busState = RX_START;
+        rxIsResponse = true;
       } else
         busState = IDLE; // bus can't actually be high, reset
         // TODO: log error?
@@ -205,16 +225,25 @@ void DaliBusClass::pinchangeISR() {
     case RX_BIT:
       if (isDeltaWithinTE(delta)) {              // check if change is within time of a half-bit
         if (rxLength % 2)                        // if rxLength is odd (= actual bit change)
-          rxMessage = rxMessage << 1 | busLevel; // shift in received bit
+        {
+          if(rxIsResponse)
+            rxMessage = rxMessage << 1 | busLevel;   // shift in received bit
+          else
+            rxCommand = rxCommand << 1 | busLevel;
+        }
         rxLength++;
       } else if (isDeltaWithin2TE(delta)) {       // check if change is within time of two half-bits
-        rxMessage = rxMessage << 1 | busLevel;   // shift in received bit
+        if(rxIsResponse)
+          rxMessage = rxMessage << 1 | busLevel;   // shift in received bit
+        else
+          rxCommand = rxCommand << 1 | busLevel;
+        rxLength += 2;
         rxLength += 2;
       } else {
         rxLength = DALI_RX_ERROR;
         busState = RX_STOP; // timing error -> reset state
       }
-      if (rxLength == 16) // check if all 8 bits have been received
+      if (rxIsResponse && rxLength == 16) // check if all 8 bits have been received
         busState = RX_STOP;
       break;
     case SHORT:
@@ -222,6 +251,10 @@ void DaliBusClass::pinchangeISR() {
         busState = IDLE; // recover from bus error
       break;
     case IDLE:
+      if(busLevel == LOW) {
+        busState = RX_START;
+        rxIsResponse = false;
+      }
       break;  // ignore, we didn't expect rx
   }
 }
