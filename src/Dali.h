@@ -42,7 +42,7 @@
 #define DALI_H
 
 #include <arduino.h>
-#include "dalibus.h"
+#include "DaliBus.h"
 
 /**
  * DALI library base class.

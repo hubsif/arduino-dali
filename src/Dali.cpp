@@ -15,7 +15,7 @@
  * MA 02110-1301  USA
 */
 
-#include "dali.h"
+#include "Dali.h"
 
 /*    
     0- 31  arc power control commands
