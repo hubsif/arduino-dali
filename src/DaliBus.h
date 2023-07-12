@@ -50,6 +50,8 @@ typedef enum daliReturnValue {
   DALI_COLLISION = -8,
 } daliReturnValue;
 
+typedef void (*EventHandlerReceivedDataFuncPtr)(uint8_t *data, uint8_t len);
+
 class DaliBusClass {
   public:
     void begin(byte tx_pin, byte rx_pin, bool active_low = true);
@@ -62,6 +64,7 @@ class DaliBusClass {
 
     void timerISR();
     void pinchangeISR();
+    EventHandlerReceivedDataFuncPtr receivedCallback;
 
   protected:
     byte txPin, rxPin;
@@ -84,8 +87,10 @@ class DaliBusClass {
 
     volatile unsigned long rxLastChange;
     volatile byte rxMessage;
+    volatile uint32_t rxCommand;
     volatile char rxLength;
     volatile char rxError;
+    volatile bool rxIsResponse = false;
 
     bool isDeltaWithinTE(unsigned long delta);
     bool isDeltaWithin2TE(unsigned long delta);
