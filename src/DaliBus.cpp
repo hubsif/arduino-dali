@@ -16,11 +16,17 @@
 */
 
 #include "DaliBus.h"
+#include "OpenKNX.h"
 
 #ifndef ARDUINO_ARCH_RP2040
   // wrapper for interrupt handler
 void DaliBus_wrapper_pinchangeISR() { DaliBus.pinchangeISR(); }
-void DaliBus_wrapper_timerISR() { DaliBus.timerISR(); }
+#ifdef __time_critical_func
+    void __isr __time_critical_func(DaliBus_wrapper_timerISR)()
+#else
+    void DaliBus_wrapper_timerISR() 
+#endif
+{ DaliBus.timerISR(); }
 #else
 RPI_PICO_Timer timer2(0);
 #endif
@@ -103,6 +109,7 @@ void DaliBusClass::timerISR() {
   if (busIdleCount == 4 && getBusLevel() == LOW) { // bus is low idle for more than 2 TE, something's pulling down for too long
     busState = SHORT;
     setBusLevel(HIGH);
+    logInfo("Dali", "Pulldown error");
     // TODO: log error?
   }
 
@@ -189,10 +196,14 @@ void DaliBusClass::pinchangeISR() {
   busIdleCount = 0;           // reset idle counter so timer knows that something's happening
 
   if (busState <= TX_STOP) {          // check if we are transmitting
+#ifndef DALI_NO_COLLISSION_CHECK
     if (busLevel != txBusLevel) { // check for collision
       txCollision = 1;	           // signal collision
+      logInfo("Dali", "collision %i", busState);
+      timer2.restartTimer();
       busState = IDLE;	               // stop transmission
     }
+#endif
     return;                        // no collision, ignore pin change
   }
 
@@ -206,11 +217,14 @@ void DaliBusClass::pinchangeISR() {
     case WAIT_RX:
       if (busLevel == LOW) { // start of rx frame
         //Timer1.restart();    // sync timer
+        timer2.restartTimer();
         busState = RX_START;
         rxIsResponse = true;
-      } else
+      } else {
         busState = IDLE; // bus can't actually be high, reset
+        logInfo("Dali", "cant be high");
         // TODO: log error?
+      }
       break;
     case RX_START:
       if (busLevel == HIGH && isDeltaWithinTE(delta)) { // validate start bit
@@ -220,6 +234,7 @@ void DaliBusClass::pinchangeISR() {
       } else {                                   // invalid start bit -> reset bus state
         rxLength = DALI_RX_ERROR;
         busState = RX_STOP;
+        logInfo("Dali", "invalid start bit");
       }
       break;
     case RX_BIT:
@@ -241,6 +256,7 @@ void DaliBusClass::pinchangeISR() {
       } else {
         rxLength = DALI_RX_ERROR;
         busState = RX_STOP; // timing error -> reset state
+        logInfo("Dali", "timing error");
       }
       if (rxIsResponse && rxLength == 16) // check if all 8 bits have been received
         busState = RX_STOP;
