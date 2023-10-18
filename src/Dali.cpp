@@ -84,20 +84,20 @@ daliReturnValue DaliClass::sendArcWait(byte address, byte value, byte addr_type,
   return (daliReturnValue)sendRawWait(prepareCmd(message, address, value, addr_type, 0), 2, timeout);
 }
 
-daliReturnValue DaliClass::sendCmdBroadcast(byte command) {
+daliReturnValue DaliClass::sendCmdBroadcast(DaliCmd command) {
   return sendCmd(0xFF, command, 1);
 }
 
-daliReturnValue DaliClass::sendCmd(byte address, byte command, byte addr_type) {
+daliReturnValue DaliClass::sendCmd(byte address, DaliCmd command, byte addr_type) {
   byte message[2];
   return DaliBus.sendRaw(prepareCmd(message, address, command, addr_type, 1), 2);
 }
 
-int DaliClass::sendCmdBroadcastWait(byte command, byte timeout) {
+int DaliClass::sendCmdBroadcastWait(DaliCmd command, byte timeout) {
   return sendCmdWait(0xFF, command, 1, timeout);
 }
 
-int DaliClass::sendCmdWait(byte address, byte command, byte addr_type, byte timeout) {
+int DaliClass::sendCmdWait(byte address, DaliCmd command, byte addr_type, byte timeout) {
   byte sendCount = (command > 32 && command < 143) ? 2 : 1; // config commands need to be sent twice
 
   byte message[2];
@@ -120,7 +120,8 @@ byte * DaliClass::prepareSpecialCmd(byte * message, word command, byte value) {
   return message;
 }
 
-daliReturnValue DaliClass::sendSpecialCmd(word command, byte value) {
+daliReturnValue DaliClass::sendSpecialCmd(DaliSpecialCmd cmd, byte value) {
+  word command = static_cast<word>(cmd);
   if (command < 256 || command > 287) return DALI_INVALID_PARAMETER;
   byte message[2];
   return DaliBus.sendRaw(prepareSpecialCmd(message, command, value), 2);
@@ -149,31 +150,31 @@ void DaliClass::commission_tick() {
   if (DaliBus.busIsIdle()) { // wait until bus is idle
     switch (commissionState) {
       case COMMISSION_INIT:
-        sendSpecialCmd(CMD_INITIALISE, (commissionOnlyNew ? 255 : 0));
+        sendSpecialCmd(DaliSpecialCmd::INITIALISE, (commissionOnlyNew ? 255 : 0));
         commissionState = COMMISSION_INIT2;
         break;
       case COMMISSION_INIT2:
-        sendSpecialCmd(CMD_INITIALISE, (commissionOnlyNew ? 255 : 0));
+        sendSpecialCmd(DaliSpecialCmd::INITIALISE, (commissionOnlyNew ? 255 : 0));
         commissionState = (commissionOnlyNew ? COMMISSION_RANDOM : COMMISSION_WRITE_DTR);
         break;
       case COMMISSION_WRITE_DTR:
-        sendSpecialCmd(CMD_SET_DTR, 255);
+        sendSpecialCmd(DaliSpecialCmd::SET_DTR, 255);
         commissionState = COMMISSION_REMOVE_SHORT;
         break;
       case COMMISSION_REMOVE_SHORT:
-        sendCmd(63, CMD_DTR_AS_SHORT, DALI_GROUP_ADDRESS);
+        sendCmd(63, DaliCmd::DTR_AS_SHORT, DaliAddressTypes::GROUP);
         commissionState = COMMISSION_REMOVE_SHORT2;
         break;
       case COMMISSION_REMOVE_SHORT2:
-        sendCmd(63, CMD_DTR_AS_SHORT, DALI_GROUP_ADDRESS);
+        sendCmd(63, DaliCmd::DTR_AS_SHORT, DaliAddressTypes::GROUP);
         commissionState = COMMISSION_RANDOM;
         break;
       case COMMISSION_RANDOM:
-        sendSpecialCmd(CMD_RANDOMISE);
+        sendSpecialCmd(DaliSpecialCmd::RANDOMISE);
         commissionState = COMMISSION_RANDOM2;
         break;
       case COMMISSION_RANDOM2:
-        sendSpecialCmd(CMD_RANDOMISE);
+        sendSpecialCmd(DaliSpecialCmd::RANDOMISE);
         commissionState = COMMISSION_RANDOMWAIT;
         break;
       case COMMISSION_RANDOMWAIT:  // wait 100ms for random address to generate
@@ -184,19 +185,19 @@ void DaliClass::commission_tick() {
         searchIterations = 0;
         currentSearchAddress = 0xFFFFFF;
       case COMMISSION_SEARCHHIGH:
-        sendSpecialCmd(CMD_SEARCHADDRH, (currentSearchAddress >> 16) & 0xFF);
+        sendSpecialCmd(DaliSpecialCmd::SEARCHADDRH, (currentSearchAddress >> 16) & 0xFF);
         commissionState = COMMISSION_SEARCHMID;
         break;
       case COMMISSION_SEARCHMID:
-        sendSpecialCmd(CMD_SEARCHADDRM, (currentSearchAddress >> 8) & 0xFF);
+        sendSpecialCmd(DaliSpecialCmd::SEARCHADDRM, (currentSearchAddress >> 8) & 0xFF);
         commissionState = COMMISSION_SEARCHLOW;
         break;
       case COMMISSION_SEARCHLOW:
-        sendSpecialCmd(CMD_SEARCHADDRL, (currentSearchAddress) & 0xFF);
+        sendSpecialCmd(DaliSpecialCmd::SEARCHADDRL, (currentSearchAddress) & 0xFF);
         commissionState = COMMISSION_COMPARE;
         break;
       case COMMISSION_COMPARE:
-        sendSpecialCmd(CMD_COMPARE);
+        sendSpecialCmd(DaliSpecialCmd::COMPARE);
         commissionState = COMMISSION_CHECKFOUND;
         break;
       case COMMISSION_CHECKFOUND:
@@ -224,11 +225,11 @@ void DaliClass::commission_tick() {
         break;
         }
       case COMMISSION_PROGRAMSHORT:
-        sendSpecialCmd(CMD_PROGRAMSHORT, (nextShortAddress << 1) | 1);
+        sendSpecialCmd(DaliSpecialCmd::PROGRAMSHORT, (nextShortAddress << 1) | 1);
         commissionState = COMMISSION_VERIFYSHORT;
         break;
       case COMMISSION_VERIFYSHORT:
-        sendSpecialCmd(CMD_VERIFYSHORT, (nextShortAddress << 1) | 1);
+        sendSpecialCmd(DaliSpecialCmd::VERIFYSHORT, (nextShortAddress << 1) | 1);
         commissionState = COMMISSION_VERIFYSHORTRESPONSE;
         break;
       case COMMISSION_VERIFYSHORTRESPONSE:
@@ -240,11 +241,11 @@ void DaliClass::commission_tick() {
           commissionState = COMMISSION_TERMINATE;
         break;
       case COMMISSION_WITHDRAW:
-        sendSpecialCmd(CMD_WITHDRAW);
+        sendSpecialCmd(DaliSpecialCmd::WITHDRAW);
         commissionState = COMMISSION_STARTSEARCH;
         break;
       case COMMISSION_TERMINATE:
-        sendSpecialCmd(CMD_TERMINATE);
+        sendSpecialCmd(DaliSpecialCmd::TERMINATE);
         commissionState = COMMISSION_OFF;
         break;
     }

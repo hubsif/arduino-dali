@@ -51,7 +51,6 @@ void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
     DaliBus.pinchangeISR();
   }, CHANGE);
 
-  float frequenz = 1 / DALI_TE;
   timer2.attachInterrupt(2398, [](repeating_timer *t) -> bool {
     DaliBus.timerISR();
     return true;
