@@ -205,8 +205,11 @@ void __time_critical_func(DaliBusClass::pinchangeISR)() {
 #ifndef DALI_NO_COLLISSION_CHECK
     if (busLevel != txBusLevel) { // check for collision
       txCollision = 1;	           // signal collision
-      logInfo("Dali", "collision %i", busState);
+      if(errorCallback != 0)
+        errorCallback(DALI_COLLISION);
+      #ifdef DALI_TIMER
       timer2.restartTimer();
+      #endif
       busState = IDLE;	               // stop transmission
     }
 #endif

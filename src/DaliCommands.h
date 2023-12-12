@@ -24,8 +24,9 @@ enum DaliCmd {
       QUERY_ADDRH = 194, QUERY_ADDRM = 195, QUERY_ADDRL = 196,
       SET_COORDINATE_X = 224, SET_COORDINATE_Y = 225,
       ACTIVATE = 226,
-      SET_TEMPERATURE_COLOUR = 231,
-      SET_TEMP_RGB = 235
+      SET_TEMPERATURE_COLOUR = 231, //AppExtDT8
+      SET_TEMP_RGB = 235, //AppExtDT8
+      QUERY_COLOR_TYPE_FEATURES = 249 //AppExtDT8
     };
 
 /** DALI special commands */
