@@ -30,12 +30,14 @@
 #ifdef ARDUINO_ARCH_RP2040
 #include "TimerInterrupt_Generic.h"
 #ifndef DALI_TIMER
-#define DALI_TIMER 2
-#warning DALI_TIMER not set; using 2 as default (valid values: 0-3)
+  #ifndef __DALI_TIMER_WARNING
+    #define __DALI_TIMER_WARNING
+    #warning DALI_TIMER not set; make sure to call DaliBusClass::timerISR
+  #endif
 #else
-#if DALI_TIMER < 0 || DALI_TIMER > 3
-#error DALI_TIMER has invalid value (valid values: 0-3)
-#endif
+  #if DALI_TIMER < 0 || DALI_TIMER > 3
+    #error TIMER has invalid value (valid values: 0-3)
+  #endif
 #endif
 #else
 // TimerOne library for tx timer
@@ -52,6 +54,7 @@ const unsigned long DALI_TE_MAX = (120 * DALI_TE) / 100;                 // 500u
 
 /** some enum */
 typedef enum daliReturnValue {
+  DALI_NO_ERROR = 0,
   DALI_RX_EMPTY = -1,
   DALI_RX_ERROR = -2,
   DALI_SENT = -3,
@@ -60,9 +63,14 @@ typedef enum daliReturnValue {
   DALI_READY_TIMEOUT = -6,
   DALI_SEND_TIMEOUT = -7,
   DALI_COLLISION = -8,
+  DALI_PULLDOWN = -9,
+  DALI_CANT_BE_HIGH = -10,
+  DALI_INVALID_STARTBIT = -11,
+  DALI_ERROR_TIMING = -12,
 } daliReturnValue;
 
 typedef void (*EventHandlerReceivedDataFuncPtr)(uint8_t *data, uint8_t len);
+typedef void (*EventHandlerErrorFuncPtr)(daliReturnValue errorCode);
 
 class DaliBusClass {
   public:
@@ -77,6 +85,7 @@ class DaliBusClass {
     void timerISR();
     void pinchangeISR();
     EventHandlerReceivedDataFuncPtr receivedCallback;
+    EventHandlerErrorFuncPtr errorCallback;
 
   protected:
     byte txPin, rxPin;

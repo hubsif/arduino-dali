@@ -16,7 +16,6 @@
 */
 
 #include "DaliBus.h"
-#include "OpenKNX.h"
 
 #ifndef ARDUINO_ARCH_RP2040
   // wrapper for interrupt handler
@@ -28,7 +27,15 @@ void DaliBus_wrapper_pinchangeISR() { DaliBus.pinchangeISR(); }
 #endif
 { DaliBus.timerISR(); }
 #else
-RPI_PICO_Timer timer2(0);
+#ifdef DALI_TIMER
+RPI_PICO_Timer timer2(DALI_TIMER);
+#endif
+#ifdef __time_critical_func
+    void __isr __time_critical_func(DaliBus_wrapper_pinchangeISR)()
+#else
+    void DaliBus_wrapper_pinchangeISR() 
+#endif
+{ DaliBus.pinchangeISR(); }
 #endif
 
 void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
@@ -47,14 +54,14 @@ void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
   pinMode(rxPin, INPUT);
 
 #ifdef ARDUINO_ARCH_RP2040
-  attachInterrupt(digitalPinToInterrupt(rxPin), []() -> void {
-    DaliBus.pinchangeISR();
-  }, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(rxPin), DaliBus_wrapper_pinchangeISR, CHANGE);
 
+  #ifdef DALI_TIMER
   timer2.attachInterrupt(2398, [](repeating_timer *t) -> bool {
     DaliBus.timerISR();
     return true;
   });
+  #endif
 #else
   attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(rxPin), DaliBus_wrapper_pinchangeISR, CHANGE);
 
@@ -108,8 +115,8 @@ void DaliBusClass::timerISR() {
   if (busIdleCount == 4 && getBusLevel() == LOW) { // bus is low idle for more than 2 TE, something's pulling down for too long
     busState = SHORT;
     setBusLevel(HIGH);
-    logInfo("Dali", "Pulldown error");
-    // TODO: log error?
+    if(errorCallback != 0)
+      errorCallback(DALI_PULLDOWN);
   }
 
   // timer state machine
@@ -190,7 +197,7 @@ void DaliBusClass::timerISR() {
   }
 }
 
-void DaliBusClass::pinchangeISR() {
+void __time_critical_func(DaliBusClass::pinchangeISR)() {
   byte busLevel = getBusLevel(); // TODO: do we have to check if level actually changed?
   busIdleCount = 0;           // reset idle counter so timer knows that something's happening
 
@@ -216,13 +223,15 @@ void DaliBusClass::pinchangeISR() {
     case WAIT_RX:
       if (busLevel == LOW) { // start of rx frame
         //Timer1.restart();    // sync timer
+        #ifdef DALI_TIMER
         timer2.restartTimer();
+        #endif
         busState = RX_START;
         rxIsResponse = true;
       } else {
         busState = IDLE; // bus can't actually be high, reset
-        logInfo("Dali", "cant be high");
-        // TODO: log error?
+        if(errorCallback != 0)
+          errorCallback(DALI_CANT_BE_HIGH);
       }
       break;
     case RX_START:
@@ -233,7 +242,8 @@ void DaliBusClass::pinchangeISR() {
       } else {                                   // invalid start bit -> reset bus state
         rxLength = DALI_RX_ERROR;
         busState = RX_STOP;
-        logInfo("Dali", "invalid start bit");
+        if(errorCallback != 0)
+          errorCallback(DALI_INVALID_STARTBIT);
       }
       break;
     case RX_BIT:
@@ -255,7 +265,8 @@ void DaliBusClass::pinchangeISR() {
       } else {
         rxLength = DALI_RX_ERROR;
         busState = RX_STOP; // timing error -> reset state
-        logInfo("Dali", "timing error");
+        if(errorCallback != 0)
+          errorCallback(DALI_ERROR_TIMING);
       }
       if (rxIsResponse && rxLength == 16) // check if all 8 bits have been received
         busState = RX_STOP;
