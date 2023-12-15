@@ -229,3 +229,5 @@ void DaliClass::commission_tick() {
     }
   }
 }
+
+DaliClass Dali;
