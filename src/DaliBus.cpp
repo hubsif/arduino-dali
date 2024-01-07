@@ -201,6 +201,9 @@ void __time_critical_func(DaliBusClass::pinchangeISR)() {
   byte busLevel = getBusLevel(); // TODO: do we have to check if level actually changed?
   busIdleCount = 0;           // reset idle counter so timer knows that something's happening
 
+  if(busLevel != 0 && activityCallback != 0)
+    activityCallback();
+
   if (busState <= TX_STOP) {          // check if we are transmitting
 #ifndef DALI_NO_COLLISSION_CHECK
     if (busLevel != txBusLevel) { // check for collision

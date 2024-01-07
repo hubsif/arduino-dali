@@ -42,6 +42,11 @@ void DaliClass::setCallback(EventHandlerReceivedDataFuncPtr callback)
   DaliBus.receivedCallback = callback;
 }
 
+void DaliClass::setActivityCallback(EventHandlerActivityFuncPtr callback)
+{
+  DaliBus.activityCallback = callback;
+}
+
 int DaliClass::sendRawWait(const byte * message, byte length, byte timeout) {
   unsigned long time = millis();
   int result;

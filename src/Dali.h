@@ -146,6 +146,9 @@ class DaliClass {
     /** Set Callback for receiving messages. */
     void setCallback(EventHandlerReceivedDataFuncPtr callback);
 
+    /** Set Callback for activity. */
+    void setActivityCallback(EventHandlerActivityFuncPtr callback);
+
 #ifndef DALI_NO_COMMISSIONING
     /** Initiate commissioning of all DALI ballasts
       * @param startAddress  address starting short address assignment from

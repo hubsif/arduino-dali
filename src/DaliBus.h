@@ -48,8 +48,8 @@
 
 const int DALI_BAUD = 1200;
 const unsigned long DALI_TE = 417;
-const unsigned long DALI_TE_MIN = 217;                 // 333us
-const unsigned long DALI_TE_MAX = 617;                 // 500us
+const unsigned long DALI_TE_MIN = ( 80 * DALI_TE) / 100;                 // 333us
+const unsigned long DALI_TE_MAX = (120 * DALI_TE) / 100;                 // 500us
 
 
 /** some enum */
@@ -70,6 +70,7 @@ typedef enum daliReturnValue {
 } daliReturnValue;
 
 typedef void (*EventHandlerReceivedDataFuncPtr)(uint8_t *data, uint8_t len);
+typedef void (*EventHandlerActivityFuncPtr)();
 typedef void (*EventHandlerErrorFuncPtr)(daliReturnValue errorCode);
 
 class DaliBusClass {
@@ -85,6 +86,7 @@ class DaliBusClass {
     void timerISR();
     void pinchangeISR();
     EventHandlerReceivedDataFuncPtr receivedCallback;
+    EventHandlerActivityFuncPtr activityCallback;
     EventHandlerErrorFuncPtr errorCallback;
 
   protected:
