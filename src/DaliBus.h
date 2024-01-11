@@ -29,15 +29,17 @@
 
 #ifdef ARDUINO_ARCH_RP2040
 #include "TimerInterrupt_Generic.h"
-#ifndef DALI_TIMER
-  #ifndef __DALI_TIMER_WARNING
-    #define __DALI_TIMER_WARNING
-    #warning DALI_TIMER not set; make sure to call DaliBusClass::timerISR
+
+#ifndef DALI_NO_TIMER
+  #ifndef DALI_TIMER
+    #warning DALI_TIMER not set; default will be set (2)
+    #define DALI_TIMER 2
   #endif
-#else
   #if DALI_TIMER < 0 || DALI_TIMER > 3
     #error TIMER has invalid value (valid values: 0-3)
   #endif
+#else
+  #warning DALI_TIMER not set; make sure to call DaliBusClass::timerISR
 #endif
 #else
 // TimerOne library for tx timer
