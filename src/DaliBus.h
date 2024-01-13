@@ -50,8 +50,8 @@
 
 const int DALI_BAUD = 1200;
 const unsigned long DALI_TE = 417;
-const unsigned long DALI_TE_MIN = ( 80 * DALI_TE) / 100;                 // 333us
-const unsigned long DALI_TE_MAX = (120 * DALI_TE) / 100;                 // 500us
+const unsigned long DALI_TE_MIN = ( 50 * DALI_TE) / 100;                 // 333us
+const unsigned long DALI_TE_MAX = (150 * DALI_TE) / 100;                 // 500us
 
 
 /** some enum */
