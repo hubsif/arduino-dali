@@ -38,6 +38,16 @@ RPI_PICO_Timer timer2(DALI_TIMER);
 { DaliBus.pinchangeISR(); }
 #endif
 
+// static void gpio_toggle ()
+// {
+//   DaliBus.pinchangeISR();
+//   gpio_acknowledge_irq(16, IO_IRQ_BANK0);
+// }
+
+void _gpioInterruptDispatcher3(uint gpio, uint32_t events) {
+  DaliBus.pinchangeISR();
+}
+
 void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
   txPin = tx_pin;
   rxPin = rx_pin;
@@ -54,7 +64,13 @@ void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
   pinMode(rxPin, INPUT);
 
 #ifdef ARDUINO_ARCH_RP2040
-  attachInterrupt(digitalPinToInterrupt(rxPin), DaliBus_wrapper_pinchangeISR, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(rxPin), DaliBus_wrapper_pinchangeISR, CHANGE);
+
+  gpio_set_irq_enabled_with_callback(rxPin, GPIO_IRQ_EDGE_FALL|GPIO_IRQ_EDGE_RISE, true, _gpioInterruptDispatcher3);
+
+  // irq_set_exclusive_handler(IO_IRQ_BANK0, gpio_toggle);
+  // gpio_set_irq_enabled(rxPin, GPIO_IRQ_EDGE_FALL|GPIO_IRQ_EDGE_RISE, true);
+  // irq_set_enabled(IO_IRQ_BANK0, true);
 
   #ifdef DALI_TIMER
   timer2.attachInterrupt(2398, [](repeating_timer *t) -> bool {
@@ -108,11 +124,11 @@ int DaliBusClass::getLastResponse() {
   return response;
 }
 
-void DaliBusClass::timerISR() {
+void __time_critical_func(DaliBusClass::timerISR()) {
   if (busIdleCount < 0xff) // increment idle counter avoiding overflow
     busIdleCount++;
 
-  if (busIdleCount == 4 && getBusLevel() == LOW) { // bus is low idle for more than 2 TE, something's pulling down for too long
+  if (busIdleCount == 4 && getBusLevel == LOW) { // bus is low idle for more than 2 TE, something's pulling down for too long
     busState = SHORT;
     setBusLevel(HIGH);
     if(errorCallback != 0)
@@ -134,16 +150,20 @@ void DaliBusClass::timerISR() {
       break;
     case TX_BIT_1ST: // prepare bus for bit (1st half)
       if (txMessage[txPos >> 3] & 1 << (7 - (txPos & 0x7)))
+      {
         setBusLevel(LOW);
-      else
+      } else {
         setBusLevel(HIGH);
+      }
       busState = TX_BIT_2ND;
       break;
     case TX_BIT_2ND: // send bit (2nd half)
       if (txMessage[txPos >> 3] & 1 << (7 - (txPos & 0x7)))
+      {
         setBusLevel(HIGH);
-      else
+      } else {
         setBusLevel(LOW);
+      }
       txPos++;
       if (txPos < txLength)
         busState = TX_BIT_1ST;
@@ -197,8 +217,8 @@ void DaliBusClass::timerISR() {
   }
 }
 
-void __time_critical_func(DaliBusClass::pinchangeISR)() {
-  byte busLevel = getBusLevel(); // TODO: do we have to check if level actually changed?
+void __not_in_flash_func(DaliBusClass::pinchangeISR)() {
+  byte busLevel = getBusLevel; // TODO: do we have to check if level actually changed?
   busIdleCount = 0;           // reset idle counter so timer knows that something's happening
 
   if(busLevel != 0 && activityCallback != 0)
@@ -288,23 +308,6 @@ void __time_critical_func(DaliBusClass::pinchangeISR)() {
       }
       break;  // ignore, we didn't expect rx
   }
-}
-
-bool DaliBusClass::isDeltaWithinTE(unsigned long delta) {
-  return (DALI_TE_MIN <= delta && delta <= DALI_TE_MAX);
-}
-
-bool DaliBusClass::isDeltaWithin2TE(unsigned long delta) {
-  return (2*DALI_TE_MIN <= delta && delta <= 2*DALI_TE_MAX);
-}
-
-byte DaliBusClass::getBusLevel() {
-  return (activeLow ? !digitalRead(rxPin) : digitalRead(rxPin));
-}
-
-void DaliBusClass::setBusLevel(byte level) {
-  digitalWrite(txPin, (activeLow ? !level : level));
-  txBusLevel = level;
 }
 
 DaliBusClass DaliBus;

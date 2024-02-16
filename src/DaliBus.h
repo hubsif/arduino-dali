@@ -1,3 +1,5 @@
+#pragma once
+
 /***********************************************************************
  * This library is free software; you can redistribute it and/or       *
  * modify it under the terms of the GNU Lesser General Public          *
@@ -53,6 +55,10 @@ const unsigned long DALI_TE = 417;
 const unsigned long DALI_TE_MIN = ( 50 * DALI_TE) / 100;                 // 333us
 const unsigned long DALI_TE_MAX = (150 * DALI_TE) / 100;                 // 500us
 
+#define isDeltaWithinTE(delta) (DALI_TE_MIN <= delta && delta <= DALI_TE_MAX)
+#define isDeltaWithin2TE(delta) (2*DALI_TE_MIN <= delta && delta <= 2*DALI_TE_MAX)
+#define getBusLevel (activeLow ? !gpio_get(rxPin) : gpio_get(rxPin))
+#define setBusLevel(level) gpio_put(txPin, (activeLow ? !level : level)); txBusLevel = level;
 
 /** some enum */
 typedef enum daliReturnValue {
@@ -116,11 +122,6 @@ class DaliBusClass {
     volatile char rxLength;
     volatile char rxError;
     volatile bool rxIsResponse = false;
-
-    bool isDeltaWithinTE(unsigned long delta);
-    bool isDeltaWithin2TE(unsigned long delta);
-    byte getBusLevel();
-    void setBusLevel(byte level);
 };
 
 extern DaliBusClass DaliBus;
