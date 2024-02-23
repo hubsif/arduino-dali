@@ -29,25 +29,24 @@
 
 #include "Arduino.h"
 
-#ifdef ARDUINO_ARCH_RP2040
 #include "TimerInterrupt_Generic.h"
 
 #ifndef DALI_NO_TIMER
   #ifndef DALI_TIMER
-    #warning DALI_TIMER not set; default will be set (2)
-    #define DALI_TIMER 2
+    #warning DALI_TIMER not set; default will be set (0)
+    #define DALI_TIMER 0
   #endif
+  #ifdef ARDUINO_ARCH_RP2040
   #if DALI_TIMER < 0 || DALI_TIMER > 3
     #error TIMER has invalid value (valid values: 0-3)
   #endif
+  #elif defined(ARDUINO_ARCH_ESP32)
+  #if DALI_TIMER < 0 || DALI_TIMER > 1
+    #error TIMER has invalid value (valid values: 0-1)
+  #endif
+  #endif
 #else
   #warning DALI_TIMER not set; make sure to call DaliBusClass::timerISR
-#endif
-#else
-// TimerOne library for tx timer
-#include "TimerOne.h"
-// PinChangeInterrupt library for rx interrupt
-#include "PinChangeInterrupt.h"
 #endif
 
 const int DALI_BAUD = 1200;
@@ -57,8 +56,13 @@ const unsigned long DALI_TE_MAX = (150 * DALI_TE) / 100;                 // 500u
 
 #define isDeltaWithinTE(delta) (DALI_TE_MIN <= delta && delta <= DALI_TE_MAX)
 #define isDeltaWithin2TE(delta) (2*DALI_TE_MIN <= delta && delta <= 2*DALI_TE_MAX)
-#define getBusLevel (activeLow ? !gpio_get(rxPin) : gpio_get(rxPin))
-#define setBusLevel(level) gpio_put(txPin, (activeLow ? !level : level)); txBusLevel = level;
+#if defined(ARDUINO_ARCH_RP2040)
+  #define getBusLevel (activeLow ? !gpio_get(rxPin) : gpio_get(rxPin))
+  #define setBusLevel(level) gpio_put(txPin, (activeLow ? !level : level)); txBusLevel = level;
+#elif defined(ARDUINO_ARCH_ESP32)
+  #define getBusLevel (activeLow ? !digitalRead(rxPin) : digitalRead(rxPin))
+  #define setBusLevel(level) digitalWrite(txPin, (activeLow ? !level : level)); txBusLevel = level;
+#endif
 
 /** some enum */
 typedef enum daliReturnValue {

@@ -17,25 +17,14 @@
 
 #include "DaliBus.h"
 
-#ifndef ARDUINO_ARCH_RP2040
-  // wrapper for interrupt handler
-void DaliBus_wrapper_pinchangeISR() { DaliBus.pinchangeISR(); }
-#ifdef __time_critical_func
-    void __isr __time_critical_func(DaliBus_wrapper_timerISR)()
-#else
-    void DaliBus_wrapper_timerISR() 
-#endif
-{ DaliBus.timerISR(); }
-#else
 #ifdef DALI_TIMER
+#if defined(ARDUINO_ARCH_RP2040)
 RPI_PICO_Timer timer2(DALI_TIMER);
+void __isr __time_critical_func(DaliBus_wrapper_pinchangeISR)() { DaliBus.pinchangeISR(); }
+#elif defined(ARDUINO_ARCH_ESP32)
+ESP32Timer timer2(DALI_TIMER);
+void IRAM_ATTR DaliBus_wrapper_pinchangeISR() { DaliBus.pinchangeISR(); }
 #endif
-#ifdef __time_critical_func
-    void __isr __time_critical_func(DaliBus_wrapper_pinchangeISR)()
-#else
-    void DaliBus_wrapper_pinchangeISR() 
-#endif
-{ DaliBus.pinchangeISR(); }
 #endif
 
 // static void gpio_toggle ()
@@ -63,28 +52,27 @@ void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
   // RX pin setup
   pinMode(rxPin, INPUT);
 
-#ifdef ARDUINO_ARCH_RP2040
-  //attachInterrupt(digitalPinToInterrupt(rxPin), DaliBus_wrapper_pinchangeISR, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(rxPin), DaliBus_wrapper_pinchangeISR, CHANGE);
 
-  gpio_set_irq_enabled_with_callback(rxPin, GPIO_IRQ_EDGE_FALL|GPIO_IRQ_EDGE_RISE, true, _gpioInterruptDispatcher3);
+  //gpio_set_irq_enabled_with_callback(rxPin, GPIO_IRQ_EDGE_FALL|GPIO_IRQ_EDGE_RISE, true, _gpioInterruptDispatcher3);
 
   // irq_set_exclusive_handler(IO_IRQ_BANK0, gpio_toggle);
   // gpio_set_irq_enabled(rxPin, GPIO_IRQ_EDGE_FALL|GPIO_IRQ_EDGE_RISE, true);
   // irq_set_enabled(IO_IRQ_BANK0, true);
 
   #ifdef DALI_TIMER
+  #if defined(ARDUINO_ARCH_RP2040)
   timer2.attachInterrupt(2398, [](repeating_timer *t) -> bool {
     DaliBus.timerISR();
     return true;
   });
+  #elif defined(ARDUINO_ARCH_ESP32)
+  timer2.attachInterrupt(2398, +[](void * timer) -> bool {
+    DaliBus.timerISR();
+    return true;
+  });
   #endif
-#else
-  attachPinChangeInterrupt(digitalPinToPinChangeInterrupt(rxPin), DaliBus_wrapper_pinchangeISR, CHANGE);
-
-  // Timer setup
-  Timer1.initialize(DALI_TE); // set timer to time of one half-bit
-  Timer1.attachInterrupt(DaliBus_wrapper_timerISR);
-#endif
+  #endif
 }
 
 daliReturnValue DaliBusClass::sendRaw(const byte * message, byte length) {
@@ -124,7 +112,11 @@ int DaliBusClass::getLastResponse() {
   return response;
 }
 
+#if defined(ARDUINO_ARCH_RP2040)
 void __time_critical_func(DaliBusClass::timerISR()) {
+#elif defined(ARDUINO_ARCH_ESP32)
+void IRAM_ATTR DaliBusClass::timerISR() {
+#endif
   if (busIdleCount < 0xff) // increment idle counter avoiding overflow
     busIdleCount++;
 
@@ -217,7 +209,11 @@ void __time_critical_func(DaliBusClass::timerISR()) {
   }
 }
 
+#if defined(ARDUINO_ARCH_RP2040)
 void __not_in_flash_func(DaliBusClass::pinchangeISR)() {
+#elif defined(ARDUINO_ARCH_ESP32)
+void IRAM_ATTR DaliBusClass::pinchangeISR() {
+#endif
   byte busLevel = getBusLevel; // TODO: do we have to check if level actually changed?
   busIdleCount = 0;           // reset idle counter so timer knows that something's happening
 
