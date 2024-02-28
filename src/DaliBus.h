@@ -40,9 +40,13 @@
   #if DALI_TIMER < 0 || DALI_TIMER > 3
     #error TIMER has invalid value (valid values: 0-3)
   #endif
-  #elif defined(ARDUINO_ARCH_ESP32)
+  #elif defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
   #if DALI_TIMER < 0 || DALI_TIMER > 1
     #error TIMER has invalid value (valid values: 0-1)
+  #endif
+  #elif defined(ARDUINO_ARCH_AVR)
+  #if DALI_TIMER < 1 || DALI_TIMER > 3
+    #error TIMER has invalid value (valid values: 1-3)
   #endif
   #endif
 #else
@@ -59,7 +63,7 @@ const unsigned long DALI_TE_MAX = (150 * DALI_TE) / 100;                 // 500u
 #if defined(ARDUINO_ARCH_RP2040)
   #define getBusLevel (activeLow ? !gpio_get(rxPin) : gpio_get(rxPin))
   #define setBusLevel(level) gpio_put(txPin, (activeLow ? !level : level)); txBusLevel = level;
-#elif defined(ARDUINO_ARCH_ESP32)
+#else
   #define getBusLevel (activeLow ? !digitalRead(rxPin) : digitalRead(rxPin))
   #define setBusLevel(level) digitalWrite(txPin, (activeLow ? !level : level)); txBusLevel = level;
 #endif

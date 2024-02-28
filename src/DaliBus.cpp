@@ -24,6 +24,18 @@ void __isr __time_critical_func(DaliBus_wrapper_pinchangeISR)() { DaliBus.pincha
 #elif defined(ARDUINO_ARCH_ESP32)
 ESP32Timer timer2(DALI_TIMER);
 void IRAM_ATTR DaliBus_wrapper_pinchangeISR() { DaliBus.pinchangeISR(); }
+#elif defined(ARDUINO_ARCH_ESP8266)
+ESP8266Timer timer2(DALI_TIMER);
+void IRAM_ATTR DaliBus_wrapper_pinchangeISR() { DaliBus.pinchangeISR(); }
+#elif defined(ARDUINO_ARCH_AVR)
+  #if DALI_TIMER==1
+  #define timer2 ITimer1
+  #elif DALI_TIMER==2
+  #define timer2 ITimer2
+  #else
+  #define timer2 ITimer3
+  #endif
+void DaliBus_wrapper_pinchangeISR() { DaliBus.pinchangeISR(); }
 #endif
 #endif
 
@@ -66,11 +78,16 @@ void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
     DaliBus.timerISR();
     return true;
   });
-  #elif defined(ARDUINO_ARCH_ESP32)
+  #elif defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
   timer2.attachInterrupt(2398, +[](void * timer) -> bool {
     DaliBus.timerISR();
     return true;
   });
+  #elif defined(ARDUINO_ARCH_AVR)
+    timer2.init();
+    timer2.attachInterrupt(2398, +[](unsigned int outputPin) {
+      DaliBus.timerISR();
+    });
   #endif
   #endif
 }
@@ -114,8 +131,10 @@ int DaliBusClass::getLastResponse() {
 
 #if defined(ARDUINO_ARCH_RP2040)
 void __time_critical_func(DaliBusClass::timerISR()) {
-#elif defined(ARDUINO_ARCH_ESP32)
+#elif defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
 void IRAM_ATTR DaliBusClass::timerISR() {
+#elif defined(ARDUINO_ARCH_AVR)
+void DaliBusClass::timerISR() {
 #endif
   if (busIdleCount < 0xff) // increment idle counter avoiding overflow
     busIdleCount++;
@@ -211,8 +230,10 @@ void IRAM_ATTR DaliBusClass::timerISR() {
 
 #if defined(ARDUINO_ARCH_RP2040)
 void __not_in_flash_func(DaliBusClass::pinchangeISR)() {
-#elif defined(ARDUINO_ARCH_ESP32)
+#elif defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
 void IRAM_ATTR DaliBusClass::pinchangeISR() {
+#elif defined(ARDUINO_ARCH_AVR)
+void DaliBusClass::pinchangeISR() {
 #endif
   byte busLevel = getBusLevel; // TODO: do we have to check if level actually changed?
   busIdleCount = 0;           // reset idle counter so timer knows that something's happening
