@@ -1,3 +1,5 @@
+#pragma once
+
 /***********************************************************************
  * This library is free software; you can redistribute it and/or       *
  * modify it under the terms of the GNU Lesser General Public          *
@@ -27,31 +29,48 @@
 
 #include "Arduino.h"
 
-#ifdef ARDUINO_ARCH_RP2040
 #include "TimerInterrupt_Generic.h"
-#ifndef DALI_TIMER
-#define DALI_TIMER 2
-#warning DALI_TIMER not set; using 2 as default (valid values: 0-3)
+
+#ifndef DALI_NO_TIMER
+  #ifndef DALI_TIMER
+    #warning DALI_TIMER not set; default will be set (0)
+    #define DALI_TIMER 0
+  #endif
+  #ifdef ARDUINO_ARCH_RP2040
+  #if DALI_TIMER < 0 || DALI_TIMER > 3
+    #error TIMER has invalid value (valid values: 0-3)
+  #endif
+  #elif defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
+  #if DALI_TIMER < 0 || DALI_TIMER > 1
+    #error TIMER has invalid value (valid values: 0-1)
+  #endif
+  #elif defined(ARDUINO_ARCH_AVR)
+  #if DALI_TIMER < 1 || DALI_TIMER > 3
+    #error TIMER has invalid value (valid values: 1-3)
+  #endif
+  #endif
 #else
-#if DALI_TIMER < 0 || DALI_TIMER > 3
-#error DALI_TIMER has invalid value (valid values: 0-3)
-#endif
-#endif
-#else
-// TimerOne library for tx timer
-#include "TimerOne.h"
-// PinChangeInterrupt library for rx interrupt
-#include "PinChangeInterrupt.h"
+  #warning DALI_TIMER not set; make sure to call DaliBusClass::timerISR
 #endif
 
 const int DALI_BAUD = 1200;
 const unsigned long DALI_TE = 417;
-const unsigned long DALI_TE_MIN = ( 80 * DALI_TE) / 100;                 // 333us
-const unsigned long DALI_TE_MAX = (120 * DALI_TE) / 100;                 // 500us
+const unsigned long DALI_TE_MIN = ( 50 * DALI_TE) / 100;                 // 333us
+const unsigned long DALI_TE_MAX = (150 * DALI_TE) / 100;                 // 500us
 
+#define isDeltaWithinTE(delta) (DALI_TE_MIN <= delta && delta <= DALI_TE_MAX)
+#define isDeltaWithin2TE(delta) (2*DALI_TE_MIN <= delta && delta <= 2*DALI_TE_MAX)
+#if defined(ARDUINO_ARCH_RP2040)
+  #define getBusLevel (activeLow ? !gpio_get(rxPin) : gpio_get(rxPin))
+  #define setBusLevel(level) gpio_put(txPin, (activeLow ? !level : level)); txBusLevel = level;
+#else
+  #define getBusLevel (activeLow ? !digitalRead(rxPin) : digitalRead(rxPin))
+  #define setBusLevel(level) digitalWrite(txPin, (activeLow ? !level : level)); txBusLevel = level;
+#endif
 
 /** some enum */
 typedef enum daliReturnValue {
+  DALI_NO_ERROR = 0,
   DALI_RX_EMPTY = -1,
   DALI_RX_ERROR = -2,
   DALI_SENT = -3,
@@ -60,7 +79,15 @@ typedef enum daliReturnValue {
   DALI_READY_TIMEOUT = -6,
   DALI_SEND_TIMEOUT = -7,
   DALI_COLLISION = -8,
+  DALI_PULLDOWN = -9,
+  DALI_CANT_BE_HIGH = -10,
+  DALI_INVALID_STARTBIT = -11,
+  DALI_ERROR_TIMING = -12,
 } daliReturnValue;
+
+typedef void (*EventHandlerReceivedDataFuncPtr)(uint8_t *data, uint8_t len);
+typedef void (*EventHandlerActivityFuncPtr)();
+typedef void (*EventHandlerErrorFuncPtr)(daliReturnValue errorCode);
 
 class DaliBusClass {
   public:
@@ -74,6 +101,9 @@ class DaliBusClass {
 
     void timerISR();
     void pinchangeISR();
+    EventHandlerReceivedDataFuncPtr receivedCallback;
+    EventHandlerActivityFuncPtr activityCallback;
+    EventHandlerErrorFuncPtr errorCallback;
 
   protected:
     byte txPin, rxPin;
@@ -96,13 +126,10 @@ class DaliBusClass {
 
     volatile unsigned long rxLastChange;
     volatile byte rxMessage;
+    volatile uint32_t rxCommand;
     volatile char rxLength;
     volatile char rxError;
-
-    bool isDeltaWithinTE(unsigned long delta);
-    bool isDeltaWithin2TE(unsigned long delta);
-    byte getBusLevel();
-    void setBusLevel(byte level);
+    volatile bool rxIsResponse = false;
 };
 
 extern DaliBusClass DaliBus;
