@@ -137,6 +137,7 @@ int DaliClass::sendSpecialCmdWait(word command, byte value, byte timeout) {
   return sendRawWait(prepareSpecialCmd(message, command, value), 2);
 }
 
+#ifndef DALI_NO_COMMISSIONING
 void DaliClass::commission(byte startAddress, bool onlyNew) {
   nextShortAddress = startAddress;
   commissionOnlyNew = onlyNew;
@@ -256,6 +257,7 @@ void DaliClass::commission_tick() {
     }
   }
 }
+#endif
 
 #ifndef DALI_DONT_EXPORT
 DaliClass Dali;
