@@ -40,7 +40,8 @@ enum DaliSpecialCmd {
 enum DaliCmdExtendedDT8 {
   SET_TEMP_KELVIN = 231,
   SET_TEMP_RGB = 235,
-  QUERY_COLOR_TYPE_FEATURES = 249
+  QUERY_COLOR_TYPE_FEATURES = 249,
+  QUERY_COLOR_VALUE = 250
 };
 
 /** DALI device types */
