@@ -105,6 +105,10 @@ class DaliBusClass {
     EventHandlerActivityFuncPtr activityCallback;
     EventHandlerErrorFuncPtr errorCallback;
 
+    //TODO remove temp
+    bool tempBusLevel = false;
+    uint16_t tempDelta = 0;
+
   protected:
     byte txPin, rxPin;
     bool activeLow;

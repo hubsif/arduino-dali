@@ -283,6 +283,8 @@ void DaliBusClass::pinchangeISR() {
         rxMessage = 0;
         busState = RX_BIT;
       } else {                                   // invalid start bit -> reset bus state
+        tempBusLevel = busLevel;
+        tempDelta = delta;
         rxLength = DALI_RX_ERROR;
         busState = RX_STOP;
         if(errorCallback != 0)
