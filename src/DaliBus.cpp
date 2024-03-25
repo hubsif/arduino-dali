@@ -310,6 +310,7 @@ void DaliBusClass::pinchangeISR() {
       } else {
         rxLength = DALI_RX_ERROR;
         busState = RX_STOP; // timing error -> reset state
+        tempDelta = delta;
         if(errorCallback != 0)
           errorCallback(DALI_ERROR_TIMING);
       }
