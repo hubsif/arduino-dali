@@ -1,0 +1,19 @@
+{
+    "name": "Dali",
+    "version": "0.0.3",
+    "dependencies": {
+        "khoih-prog/TimerInterrupt_Generic": "^1.13.0"
+    },
+    "description": "A (non-blocking) library for the Digital Addressable Lighting Interface (DALI)",
+    "homepage": "https://github.com/hubsif/arduino-dali",
+    "authors": {
+        "name": "hubsif",
+        "email": "hubsif@gmx.de",
+        "url": "https://github.com/hubsif",
+        "maintainer": true
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/hubsif/arduino-dali"
+    }
+}
