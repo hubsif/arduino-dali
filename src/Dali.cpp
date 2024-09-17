@@ -47,14 +47,14 @@ void DaliClass::setActivityCallback(EventHandlerActivityFuncPtr callback)
   DaliBus.activityCallback = callback;
 }
 
-int DaliClass::sendRawWait(const byte * message, byte length, byte timeout) {
+int DaliClass::sendRawWait(const byte * message, uint8_t bits, byte timeout) {
   unsigned long time = millis();
   int result;
 
   while (!DaliBus.busIsIdle())
     if (millis() - time > timeout) return DALI_READY_TIMEOUT;
 
-  result = DaliBus.sendRaw(message, length);
+  result = DaliBus.sendRaw(message, bits);
 
   while (!DaliBus.busIsIdle())
     if (millis() - time > timeout) return DALI_READY_TIMEOUT;
@@ -77,7 +77,7 @@ daliReturnValue DaliClass::sendArcBroadcast(byte value) {
 
 daliReturnValue DaliClass::sendArc(byte address, byte value, byte addr_type) {
   byte message[2];
-  return DaliBus.sendRaw(prepareCmd(message, address, value, addr_type, 0), 2);
+  return DaliBus.sendRaw(prepareCmd(message, address, value, addr_type, 0), 16);
 }
 
 daliReturnValue DaliClass::sendArcBroadcastWait(byte value, byte timeout) {
@@ -86,7 +86,7 @@ daliReturnValue DaliClass::sendArcBroadcastWait(byte value, byte timeout) {
 
 daliReturnValue DaliClass::sendArcWait(byte address, byte value, byte addr_type, byte timeout) {
   byte message[2];
-  return (daliReturnValue)sendRawWait(prepareCmd(message, address, value, addr_type, 0), 2, timeout);
+  return (daliReturnValue)sendRawWait(prepareCmd(message, address, value, addr_type, 0), 16, timeout);
 }
 
 daliReturnValue DaliClass::sendCmdBroadcast(DaliCmd command) {
@@ -95,7 +95,7 @@ daliReturnValue DaliClass::sendCmdBroadcast(DaliCmd command) {
 
 daliReturnValue DaliClass::sendCmd(byte address, DaliCmd command, byte addr_type) {
   byte message[2];
-  return DaliBus.sendRaw(prepareCmd(message, address, command, addr_type, 1), 2);
+  return DaliBus.sendRaw(prepareCmd(message, address, command, addr_type, 1), 16);
 }
 
 int DaliClass::sendCmdBroadcastWait(DaliCmd command, byte timeout) {
@@ -129,12 +129,12 @@ daliReturnValue DaliClass::sendSpecialCmd(DaliSpecialCmd cmd, byte value) {
   word command = static_cast<word>(cmd);
   if (command < 256 || command > 287) return DALI_INVALID_PARAMETER;
   byte message[2];
-  return DaliBus.sendRaw(prepareSpecialCmd(message, command, value), 2);
+  return DaliBus.sendRaw(prepareSpecialCmd(message, command, value), 16);
 }
 
 int DaliClass::sendSpecialCmdWait(word command, byte value, byte timeout) {
   byte message[2];
-  return sendRawWait(prepareSpecialCmd(message, command, value), 2);
+  return sendRawWait(prepareSpecialCmd(message, command, value), 16);
 }
 
 #ifndef DALI_NO_COMMISSIONING

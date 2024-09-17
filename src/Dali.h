@@ -135,13 +135,13 @@ class DaliClass {
 
     /** Send raw values to the DALI bus
       * @param message  byte array to send
-      * @param length   length of the byte array
+      * @param bits   number of bits to send
       * @param timeout  time in ms to wait for action to complete
       *
-      * This method sends a raw byte array of @p length to the bus. The array can be three bytes max.
+      * This method sends a raw byte array of @p bits to the bus. The array can be three bytes max.
       * It waits for the bus to become idle before and after transmission. It returns either the received response,
       * DALI_RX_EMPTY if no response has been received or any of ::daliReturnValue if an error has occurred. */
-    int sendRawWait(const byte * message, byte length, byte timeout = 50);
+    int sendRawWait(const byte * message, uint8_t bits, byte timeout = 50);
 
     /** Set Callback for receiving messages. */
     void setCallback(EventHandlerReceivedDataFuncPtr callback);

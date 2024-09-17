@@ -39,16 +39,6 @@ void DaliBus_wrapper_pinchangeISR() { DaliBus.pinchangeISR(); }
 #endif
 #endif
 
-// static void gpio_toggle ()
-// {
-//   DaliBus.pinchangeISR();
-//   gpio_acknowledge_irq(16, IO_IRQ_BANK0);
-// }
-
-void _gpioInterruptDispatcher3(uint gpio, uint32_t events) {
-  DaliBus.pinchangeISR();
-}
-
 void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
   txPin = tx_pin;
   rxPin = rx_pin;
@@ -65,12 +55,6 @@ void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
   pinMode(rxPin, INPUT);
 
   attachInterrupt(digitalPinToInterrupt(rxPin), DaliBus_wrapper_pinchangeISR, CHANGE);
-
-  //gpio_set_irq_enabled_with_callback(rxPin, GPIO_IRQ_EDGE_FALL|GPIO_IRQ_EDGE_RISE, true, _gpioInterruptDispatcher3);
-
-  // irq_set_exclusive_handler(IO_IRQ_BANK0, gpio_toggle);
-  // gpio_set_irq_enabled(rxPin, GPIO_IRQ_EDGE_FALL|GPIO_IRQ_EDGE_RISE, true);
-  // irq_set_enabled(IO_IRQ_BANK0, true);
 
   #ifdef DALI_TIMER
   #if defined(ARDUINO_ARCH_RP2040)
@@ -92,14 +76,23 @@ void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
   #endif
 }
 
-daliReturnValue DaliBusClass::sendRaw(const byte * message, byte length) {
-  if (length > 3) return DALI_INVALID_PARAMETER;
+daliReturnValue DaliBusClass::sendRaw(const byte * message, uint8_t bits) {
+  if(bits > 25) return DALI_INVALID_PARAMETER;
+  if(bits != 25 && bits % 8 != 0) return DALI_INVALID_PARAMETER;
+  uint8_t length = (bits - (bits % 8)) / 8;
+  if(bits % 8 != 0) length++;
   if (busState != IDLE) return DALI_BUSY;
 
   // prepare variables for sending
   for (byte i = 0; i < length; i++)
     txMessage[i] = message[i];
-  txLength = length * 8;
+
+  if(bits == 25) {
+    txMessage[3] = (txMessage[2] & 1) << 7;
+    txMessage[2] = (txMessage[2] >> 1) | 0b10000000;
+  }
+
+  txLength = bits;
   txCollision = 0;
   rxMessage = DALI_RX_EMPTY;
   rxLength = 0;
@@ -192,7 +185,7 @@ void DaliBusClass::timerISR() {
       }   
       break;
     case WAIT_RX: // wait 9.17ms (22 TE) for a response
-      if (busIdleCount > 23)
+      if (busIdleCount > 22)
         busState = IDLE; // response timed out
       break;
     case RX_STOP:
@@ -210,17 +203,25 @@ void DaliBusClass::timerISR() {
         {
           if(receivedCallback != 0)
           {
-            uint8_t len = (rxLength - (rxLength % 2)) / (2*8);
-            if(len > 1)
-            {
-              uint8_t *data = new uint8_t[len];
-              for(int i = 0; i < len; i++)
-                data[i] = (rxCommand >> ((len-1-i)*8)) & 0xFF;
-              receivedCallback(data, len);
-              delete[] data;
-            } else {
-              receivedCallback((uint8_t*)&rxCommand, 1);
+            uint8_t bitlen = (rxLength - (rxLength % 2)) / 2;
+            uint8_t *data = new uint8_t[3];
+            if(bitlen == 25) {
+              uint8_t temp = rxCommand & 0xFF;
+              rxCommand = (rxCommand >> 1) & 0xFFFF;
+              rxCommand |= temp;
             }
+            uint8_t offset = bitlen - 8;
+            data[0] = (rxCommand >> offset) & 0xFF;
+            offset -= 8;
+            if(offset != 0) {
+              data[1] = (rxCommand >> offset) & 0xFF;
+              offset -= 8;
+            }
+            if(offset != 0) {
+              data[2] = (rxCommand >> offset) & 0xFF;
+              offset -= 8;
+            }
+            receivedCallback(data, bitlen);
           }
         }
       }
@@ -232,7 +233,7 @@ void DaliBusClass::timerISR() {
 void __not_in_flash_func(DaliBusClass::pinchangeISR)() {
 #elif defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
 void IRAM_ATTR DaliBusClass::pinchangeISR() {
-#elif defined(ARDUINO_ARCH_AVR)
+#else
 void DaliBusClass::pinchangeISR() {
 #endif
   byte busLevel = getBusLevel; // TODO: do we have to check if level actually changed?
