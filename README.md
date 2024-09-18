@@ -1,3 +1,5 @@
+[![PlatformIO Registry](https://badges.registry.platformio.org/packages/thewhobox/library/Dali.svg)](https://registry.platformio.org/libraries/thewhobox/Dali) [![CodeFactor](https://www.codefactor.io/repository/github/thewhobox/arduino-dali/badge)](https://www.codefactor.io/repository/github/thewhobox/arduino-dali)
+
 ### Fork
 This repo is a fork with a few special enhancements:  
  - Defines to setup dali (see below)
@@ -24,10 +26,6 @@ Short example usage:
 ```c
 #include <Dali.h>
 
-void setup() {
-  Dali.begin(2, 3);
-}
-
 void DaliCommand(uint8_t *data, uint8_t len)
 {
   // do wathever you want with this information
@@ -42,6 +40,16 @@ void DaliActivity()
   // to long and you miss commands or corrupt sending commands
 }
 
+void setup() {
+  Dali.begin(2, 3);
+
+  // add a callback for received commands
+  Dali.setCallback(DaliCommand);
+
+  // add a callback for activity notification (use for leds or something)
+  Dali.setActivityCallback(DaliActivity);
+}
+
 void loop() {
   // blink ballast with short address 3
   Dali.sendArc(3, 254);
@@ -53,12 +61,6 @@ void loop() {
   // alternatively to prevent fading you could use
   // Dali.sendCmd(3, Dali.CMD_OFF);
   delay(1000);
-
-  // add a callback for received commands
-  Dali.setCallback(DaliCommand);
-
-  // add a callback for activity notification (use for leds or something)
-  Dali.setActivityCallback(DaliActivity);
 }
 ```
 

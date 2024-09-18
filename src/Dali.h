@@ -50,7 +50,6 @@
  */
 class DaliClass {
   public:
-
     /** Start the DALI bus
       * @param tx_pin       Pin to use for transmission
       * @param rx_pin       Pin to use for reception. Must support Pin Change Interrupt.
