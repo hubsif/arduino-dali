@@ -222,6 +222,7 @@ void DaliBusClass::timerISR() {
               offset -= 8;
             }
             receivedCallback(data, bitlen);
+            delete[] data;
           }
         }
       }
