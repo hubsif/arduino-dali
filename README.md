@@ -3,7 +3,7 @@
 ### Fork
 This repo is a fork with a few special enhancements:  
  - Defines to setup dali (see below)
- - Support for rp2040, ESP32, ESP8266*, AVR*
+ - Support for rp2040, ESP32, ESP8266*, AVR*, STM32*
  - Supports externally called timer isr (DALI_NO_TIMER)
  - added functions for easy broadcast telegrams
  - added Dali Commands (DaliCmdExtendedDT8)

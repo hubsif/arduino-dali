@@ -27,6 +27,9 @@ void IRAM_ATTR DaliBus_wrapper_pinchangeISR() { DaliBus.pinchangeISR(); }
 #elif defined(ARDUINO_ARCH_ESP8266)
 ESP8266Timer timer2(DALI_TIMER);
 void IRAM_ATTR DaliBus_wrapper_pinchangeISR() { DaliBus.pinchangeISR(); }
+#elif defined(ARDUINO_ARCH_STM32)
+STM32Timer timer2(DALI_TIMER);
+void DaliBus_wrapper_pinchangeISR() { DaliBus.pinchangeISR(); }
 #elif defined(ARDUINO_ARCH_AVR)
   #if DALI_TIMER==1
   #define timer2 ITimer1
@@ -72,6 +75,10 @@ void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
     timer2.attachInterrupt(2398, +[](unsigned int outputPin) {
       DaliBus.timerISR();
     });
+  #elif defined(ARDUINO_ARCH_STM32)
+  timer2.attachInterrupt(2398, []() {
+    DaliBus.timerISR();
+  });
   #endif
   #endif
 }
@@ -126,7 +133,7 @@ int DaliBusClass::getLastResponse() {
 void __time_critical_func(DaliBusClass::timerISR()) {
 #elif defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
 void IRAM_ATTR DaliBusClass::timerISR() {
-#elif defined(ARDUINO_ARCH_AVR)
+#elif defined(ARDUINO_ARCH_AVR) || defined(ARDUINO_ARCH_STM32)
 void DaliBusClass::timerISR() {
 #endif
   if (busIdleCount < 0xff) // increment idle counter avoiding overflow
