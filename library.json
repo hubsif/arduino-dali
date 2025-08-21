@@ -1,0 +1,25 @@
+{
+    "name": "Dali",
+    "version": "0.0.6",
+    "dependencies": {
+        "khoih-prog/TimerInterrupt_Generic": "^1.13.0"
+    },
+    "description": "A (non-blocking) library for the Digital Addressable Lighting Interface (DALI)",
+    "homepage": "https://github.com/thewhobox/arduino-dali",
+    "authors": [
+        {
+            "name": "thewhobox",
+            "email": "45664417+thewhobox@users.noreply.github.com",
+            "url": "https://github.com/thewhobox",
+            "maintainer": true
+        },{
+            "name": "hubsif",
+            "email": "hubsif@gmx.de",
+            "url": "https://github.com/hubsif"
+        }
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/thewhobox/arduino-dali"
+    }
+}
