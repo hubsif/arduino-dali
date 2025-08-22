@@ -29,8 +29,6 @@
 
 #include "Arduino.h"
 
-#include "TimerInterrupt_Generic.h"
-
 #ifndef DALI_NO_TIMER
   #ifndef DALI_TIMER
     #warning DALI_TIMER not set; default will be set (0)
