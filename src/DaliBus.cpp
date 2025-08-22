@@ -17,9 +17,16 @@
 
 #include "DaliBus.h"
 
+#include "TimerInterrupt_Generic.h"
+
 #ifdef DALI_TIMER
 #if defined(ARDUINO_ARCH_RP2040)
-RPI_PICO_Timer timer2(DALI_TIMER);
+  // Check for MBED-based core vs Philhower core
+  #if defined(ARDUINO_ARCH_MBED)
+    MBED_RPI_PICO_Timer timer2(DALI_TIMER);
+  #else
+    RPI_PICO_Timer timer2(DALI_TIMER);
+  #endif
 void __isr __time_critical_func(DaliBus_wrapper_pinchangeISR)() { DaliBus.pinchangeISR(); }
 #elif defined(ARDUINO_ARCH_ESP32)
 ESP32Timer timer2(DALI_TIMER);
@@ -61,10 +68,20 @@ void DaliBusClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
 
   #ifdef DALI_TIMER
   #if defined(ARDUINO_ARCH_RP2040)
-  timer2.attachInterrupt(2398, [](repeating_timer *t) -> bool {
-    DaliBus.timerISR();
-    return true;
-  });
+    #if defined(ARDUINO_ARCH_MBED)  // Arduino MBED core
+      int ret = timer2.attachInterrupt(2398, [](unsigned int) {
+        timer2.restartTimer();
+        DaliBus.timerISR();
+      });
+      if (ret < 0) {
+        Serial.println("Failed to attach timer interrupt");
+      }
+    #else  // Philhower core
+      timer2.attachInterrupt(2398, [](repeating_timer *t) -> bool {
+        DaliBus.timerISR();
+        return true;
+      });
+    #endif
   #elif defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
   timer2.attachInterrupt(2398, +[](void * timer) -> bool {
     DaliBus.timerISR();
