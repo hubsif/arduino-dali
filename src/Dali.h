@@ -60,6 +60,18 @@ class DaliClass {
       * is used by most DALI hardware interfaces. The same logic applies to the rx pin. */
     void begin(byte tx_pin, byte rx_pin, bool active_low = true);
 
+        /** Start the DALI bus
+      * @param tx_pin       Pin to use for transmission
+      * @param rx_pin       Pin to use for reception. Must support Pin Change Interrupt.
+      * @param tx_active_low  set to false if bus is active when tx is high
+      * @param rx_active_low  set to false if bus is active when rx is high
+      *
+      * Initialize the hardware for DALI usage (i.e. set pin modes, timer and interrupts). By default the bus is
+      * driven active-low, meaning with the µC tx pin being low the DALI bus will be high (idle). For transmission
+      * the µC pin will be set high, which will pull the DALI voltage low. This behaviour
+      * is used by most DALI hardware interfaces. The logic can be set separately for the rx pin. */
+    void begin(byte tx_pin, byte rx_pin, bool tx_active_low, bool rx_active_low);
+
     /** Send a direct arc level command
       * @param  address    destination address
       * @param  value      arc level

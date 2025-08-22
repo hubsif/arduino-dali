@@ -59,14 +59,14 @@ const unsigned long DALI_TE_MAX = (120 * DALI_TE) / 100;                 // 500u
 #define isDeltaWithinTE(delta) (DALI_TE_MIN <= delta && delta <= DALI_TE_MAX)
 #define isDeltaWithin2TE(delta) (2*DALI_TE_MIN <= delta && delta <= 2*DALI_TE_MAX)
 #if defined(ARDUINO_ARCH_RP2040)
-  #define getBusLevel (activeLow ? !gpio_get(rxPin) : gpio_get(rxPin))
-  #define setBusLevel(level) gpio_put(txPin, (activeLow ? !level : level)); txBusLevel = level;
+  #define getBusLevel (rxActiveLow ? !gpio_get(rxPin) : gpio_get(rxPin))
+  #define setBusLevel(level) gpio_put(txPin, (txActiveLow ? !level : level)); txBusLevel = level;
 #elif defined(ARDUINO_ARCH_ESP32)
-  #define getBusLevel (activeLow ? !(DaliBus.fastRead(rxPin)) : DaliBus.fastRead(rxPin))
-  #define setBusLevel(level) DaliBus.fastWrite(txPin, (activeLow ? !level : level)); txBusLevel = level;
+  #define getBusLevel (rxActiveLow ? !(DaliBus.fastRead(rxPin)) : DaliBus.fastRead(rxPin))
+  #define setBusLevel(level) DaliBus.fastWrite(txPin, (txActiveLow ? !level : level)); txBusLevel = level;
 #elif defined(ARDUINO_ARCH_AVR) || defined(ARDUINO_ARCH_STM32)
-  #define getBusLevel (activeLow ? !digitalRead(rxPin) : digitalRead(rxPin))
-  #define setBusLevel(level) digitalWrite(txPin, (activeLow ? !level : level)); txBusLevel = level;
+  #define getBusLevel (rxActiveLow ? !digitalRead(rxPin) : digitalRead(rxPin))
+  #define setBusLevel(level) digitalWrite(txPin, (txActiveLow ? !level : level)); txBusLevel = level;
 #else
   #error not supported Hardware
 #endif
@@ -94,7 +94,7 @@ typedef void (*EventHandlerErrorFuncPtr)(daliReturnValue errorCode);
 
 class DaliBusClass {
   public:
-    void begin(byte tx_pin, byte rx_pin, bool active_low = true);
+    void begin(byte tx_pin, byte rx_pin, bool tx_active_low = true, bool rx_active_low = true);
     daliReturnValue sendRaw(const byte * message, uint8_t bits);
 
     int getLastResponse();
@@ -128,7 +128,8 @@ class DaliBusClass {
 
   protected:
     byte txPin, rxPin;
-    bool activeLow;
+    bool txActiveLow;
+    bool rxActiveLow;
     byte txMessage[4];
     uint8_t txLength;
 

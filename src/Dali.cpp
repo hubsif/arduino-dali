@@ -34,7 +34,11 @@
 */
 
 void DaliClass::begin(byte tx_pin, byte rx_pin, bool active_low) {
-  DaliBus.begin(tx_pin, rx_pin, active_low);
+  DaliBus.begin(tx_pin, rx_pin, active_low, active_low);
+}
+
+void DaliClass::begin(byte tx_pin, byte rx_pin, bool tx_active_low, bool rx_active_low) {
+  DaliBus.begin(tx_pin, rx_pin, tx_active_low, rx_active_low);
 }
 
 void DaliClass::setCallback(EventHandlerReceivedDataFuncPtr callback)
